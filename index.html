@@ -10,17 +10,31 @@
     background: #080808;
     min-height: 100vh;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 24px;
   }
   img {
     max-width: 800px;
     width: 100%;
     display: block;
   }
+  .hint {
+    color: #1a1a1a;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    font-family: monospace;
+    text-align: center;
+    line-height: 2em;
+  }
 </style>
 </head>
 <body>
 <img src="KAGAMI_S1_start.png" alt="">
+<div class="hint">
+  おまえはもう見ている。だが見えていない。<br>
+  周波数を合わせよ。f = 2<sup>8</sup> - 1
+</div>
 </body>
 </html>
