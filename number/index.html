@@ -6,23 +6,73 @@
 <title>.</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
+
   body {
     background: #080808;
+    color: #aaaaaa;
+    font-family: 'Courier New', monospace;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 60px 40px;
+    gap: 0;
   }
-  .dim {
-    color: #222;
+
+  .label {
     font-size: 10px;
+    color: #333;
+    letter-spacing: 0.3em;
+    margin-bottom: 30px;
+  }
+
+  #game-wrapper {
+    position: relative;
+    width: 600px;
+  }
+
+  #game-canvas {
+    display: block;
+    background: #0d0d0d;
+    border: 1px solid #1a1a1a;
+    width: 600px;
+    height: 150px;
+  }
+
+  #score-display {
+    font-size: 10px;
+    color: #333;
+    letter-spacing: 0.2em;
+    text-align: right;
+    margin-top: 8px;
+  }
+
+  #start-msg {
+    font-size: 10px;
+    color: #2a2a2a;
+    letter-spacing: 0.25em;
+    text-align: center;
+    margin-top: 12px;
+  }
+
+  .dim {
+    color: #1a1a1a;
+    font-size: 10px;
+    margin-top: 40px;
     letter-spacing: 0.2em;
   }
 </style>
 </head>
 <body>
+
+<div class="label">:: 見つけろ ::</div>
+
+<div id="game-wrapper">
+  <canvas id="game-canvas" width="600" height="150"></canvas>
+  <div id="score-display">SCORE: <span id="score">0</span></div>
+  <div id="start-msg">SPACE or TAP to start</div>
+</div>
+
 <div class="dim">:: k4g4m1 ::</div>
 
 <!-- 匿名は鎧か、檻か。 -->
@@ -31,5 +81,177 @@
 <!-- 作戦により導き出された時間が次へのヒントである。 -->
 <!-- 彼女が動いた秒数を素数で割り、指数を並べろ。 -->
 
+<script>
+  const canvas = document.getElementById('game-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width;
+  const H = canvas.height;
+  const GROUND = H - 30;
+
+  let gameState = 'idle';
+  let score = 0;
+  let frameCount = 0;
+  let speed = 4;
+
+  const player = {
+    x: 80,
+    y: GROUND,
+    w: 16,
+    h: 24,
+    vy: 0,
+    jumping: false,
+    jump() {
+      if (!this.jumping) {
+        this.vy = -12;
+        this.jumping = true;
+      }
+    },
+    update() {
+      this.vy += 0.6;
+      this.y += this.vy;
+      if (this.y >= GROUND) {
+        this.y = GROUND;
+        this.vy = 0;
+        this.jumping = false;
+      }
+    },
+    draw() {
+      ctx.fillStyle = '#444';
+      ctx.fillRect(this.x, this.y - this.h, this.w, this.h);
+      ctx.fillStyle = '#080808';
+      ctx.fillRect(this.x + 10, this.y - this.h + 4, 4, 4);
+    }
+  };
+
+  let obstacles = [];
+  let spawnTimer = 0;
+  let spawnInterval = 90;
+
+  function spawnObstacle() {
+    const h = 20 + Math.floor(Math.random() * 20);
+    obstacles.push({ x: W, w: 12, h: h });
+  }
+
+  function updateObstacles() {
+    spawnTimer++;
+    if (spawnTimer >= spawnInterval) {
+      spawnObstacle();
+      spawnTimer = 0;
+      spawnInterval = 70 + Math.floor(Math.random() * 50);
+    }
+    obstacles.forEach(o => o.x -= speed);
+    obstacles = obstacles.filter(o => o.x + o.w > 0);
+  }
+
+  function drawObstacles() {
+    ctx.fillStyle = '#333';
+    obstacles.forEach(o => {
+      ctx.fillRect(o.x, GROUND - o.h, o.w, o.h);
+    });
+  }
+
+  function checkCollision() {
+    for (const o of obstacles) {
+      if (
+        player.x + player.w - 4 > o.x &&
+        player.x + 4 < o.x + o.w &&
+        player.y > GROUND - o.h
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function drawGround() {
+    ctx.strokeStyle = '#1e1e1e';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, GROUND + 1);
+    ctx.lineTo(W, GROUND + 1);
+    ctx.stroke();
+  }
+
+  function drawDead() {
+    ctx.clearRect(0, 0, W, H);
+    drawGround();
+    drawObstacles();
+    ctx.fillStyle = '#444';
+    ctx.fillRect(player.x, player.y - player.h, player.w, player.h);
+    ctx.fillStyle = '#cc0000';
+    ctx.font = '10px Courier New';
+    ctx.fillText('x x', player.x + 1, player.y - player.h + 12);
+    ctx.fillStyle = '#2a2a2a';
+    ctx.font = '11px Courier New';
+    ctx.fillText('GAME OVER', W / 2 - 42, H / 2);
+    ctx.font = '9px Courier New';
+    ctx.fillText('SPACE to retry', W / 2 - 40, H / 2 + 18);
+  }
+
+  function loop() {
+    if (gameState === 'running') {
+      frameCount++;
+      score = Math.floor(frameCount / 6);
+      if (frameCount % 300 === 0) speed += 0.3;
+
+      player.update();
+      updateObstacles();
+
+      if (checkCollision()) {
+        gameState = 'dead';
+        drawDead();
+        document.getElementById('score').textContent = score;
+        return;
+      }
+
+      ctx.clearRect(0, 0, W, H);
+      drawGround();
+      drawObstacles();
+      player.draw();
+      document.getElementById('score').textContent = score;
+    }
+
+    requestAnimationFrame(loop);
+  }
+
+  function handleInput() {
+    if (gameState === 'idle') {
+      gameState = 'running';
+      document.getElementById('start-msg').style.display = 'none';
+      loop();
+    } else if (gameState === 'running') {
+      player.jump();
+    } else if (gameState === 'dead') {
+      obstacles = [];
+      score = 0;
+      frameCount = 0;
+      speed = 4;
+      spawnTimer = 0;
+      spawnInterval = 90;
+      player.y = GROUND;
+      player.vy = 0;
+      player.jumping = false;
+      gameState = 'running';
+      loop();
+    }
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.code === 'Space') {
+      e.preventDefault();
+      handleInput();
+    }
+  });
+
+  canvas.addEventListener('click', handleInput);
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    handleInput();
+  });
+
+  ctx.clearRect(0, 0, W, H);
+  drawGround();
+  player.draw();
+</script>
 </body>
 </html>
