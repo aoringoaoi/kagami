@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-07P0XYTN7D"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-07P0XYTN7D');
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>.</title>
@@ -28,9 +36,7 @@
 <div class="msg" id="msg"></div>
 <script>
   const path = location.pathname.toLowerCase();
-
   let text = '違う。だが諦めるな。間違いも情報である。';
-
   if (path === '/hint') {
     text = 'ここには何もない。';
   } else if (path === '/answer') {
@@ -38,7 +44,6 @@
   } else if (/^\/(s1|s2|s3|s4|s5|s6|s7|s8|s9|s10)$/.test(path)) {
     text = '近道はない。';
   }
-
   document.getElementById('msg').textContent = text;
 </script>
 </body>
